@@ -1,15 +1,15 @@
 <template>
   <div>
-    <header class="masthead d-flex bg-dark">
-      <div class="container text-center my-auto">
+    <header className="masthead d-flex bg-dark">
+      <div className="container text-center my-auto">
         <img src="../assets/images/graduation.svg" width="120" height="120"/>
-        <h1 class="ml-3 d-inline font-weight-bold"><strong>iScholar</strong></h1>
-        <h4 class="mb-5" id="quote" >
-          {{msg}}
+        <h1 className="ml-3 d-inline font-weight-bold"><strong>iScholar</strong></h1>
+        <h4 className="mb-5" id="quote">
+          {{ msg }}
         </h4>
-        <a class="btn btn-primary btn-lg js-scroll-trigger" onclick="startMap(6)">START</a>
+        <router-link className="btn btn-primary btn-lg js-scroll-trigger" to="/map">START</router-link>
       </div>
-      <div class="overlay"></div>
+      <div className="overlay"></div>
     </header>
 
   </div>
@@ -70,6 +70,7 @@ export default {
   font-size: 4rem;
   color: white;
 }
+
 h4 {
   color: whitesmoke;
   padding: 20px;

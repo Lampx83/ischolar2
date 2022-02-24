@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar navbar-expand-sm navbar-dark bg-dark" id="header">
     <a class="navbar-brand" href="#">
-      <img src="../assets/images/graduation.svg" width="30" height="30" class="mr-2"/>iScholar
+      <img src="../../assets/images/graduation.svg" width="30" height="30" class="mr-2"/>iScholar
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
             aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,7 +39,10 @@
             Publish
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
-            <a class="dropdown-item" href="publish.html?c=s">Scopus</a>
+            <a class="dropdown-item" href="publish.html?c=s">
+              <router-link to="/publish">Scopus</router-link>
+
+            </a>
             <!--                    <a class="dropdown-item" href="?c=v">Local Journals</a>-->
             <!--                    <a class="dropdown-item" href="?c=c">Top Conferences</a>-->
           </div>
@@ -554,7 +557,7 @@ function presence(user) {
 
 }
 
-.profile-info{
+.profile-info {
   padding: 10px;
   text-align: center;
 }

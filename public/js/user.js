@@ -222,22 +222,22 @@ function genDoc() {
 function showNode(node) {
     $("#nodeContent").empty();
     if (node != null && node.level === undefined) { //root
-        var dialog = $("#dialog-form").dialog({
-            autoOpen: false,
-            height: 400,
-            width: 350,
-            modal: true,
-            buttons: {
-
-                Cancel: function () {
-                    dialog.dialog("close");
-                }
-            },
-            close: function () {
-                form[0].reset();
-                allFields.removeClass("ui-state-error");
-            }
-        });
+        // var dialog = $("#dialog-form").dialog({
+        //     autoOpen: false,
+        //     height: 400,
+        //     width: 350,
+        //     modal: true,
+        //     buttons: {
+        //
+        //         Cancel: function () {
+        //             dialog.dialog("close");
+        //         }
+        //     },
+        //     close: function () {
+        //         form[0].reset();
+        //         allFields.removeClass("ui-state-error");
+        //     }
+        // });
         $("#nodeContent").html("<a href = '#' onclick='generateDoc()'>Generate Document</a>");
 
     }

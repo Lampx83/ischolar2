@@ -7,10 +7,12 @@ import "jsmind/style/jsmind.css";
 import jsMind from "jsmind"
 import {database} from "@/firebase";
 import {ref, onValue} from "firebase/database";
-
-
+import $ from "jquery"
+//let baseAPI = "https://localhost"
+let baseAPI = "https://www.vncodelab.com"
 var mindCurrentVer = "";
 var jm = null;
+var selectedNode = null;
 export default {
   name: "MindMap",
   setup() {
@@ -64,20 +66,94 @@ export default {
   }
 }
 
+function showNode(nodeElement) {
+  let node = jm.get_node(nodeElement.getAttribute("nodeid"))
+  $("#nodeContent").empty();
+  console.log(node)
+  if (node != null && node.isroot) { //root
+    // var dialog = $("#dialog-form").dialog({
+    //   autoOpen: false,
+    //   height: 400,
+    //   width: 350,
+    //   modal: true,
+    //   buttons: {
+    //
+    //     Cancel: function () {
+    //       dialog.dialog("close");
+    //     }
+    //   },
+    //   close: function () {
+    //     //form[0].reset();
+    //   //  allFields.removeClass("ui-state-error");
+    //   }
+    // });
+    $("#nodeContent").html("<a href = '#' onclick='generateDoc()'>Generate Document</a>");
+
+  }
+
+  if (node != null && node.data != null && node.data.usernote != null)
+    $("#UserNotes").val(node.data.usernote);
+  else
+    $("#UserNotes").val("");
+  selectedNode = node;
+  console.log(selectedNode)
+
+  let mainNode;
+  // if (node.level >= 1) {
+  //   if (node.level == 1)
+  //     mainNode = node;
+  //   else
+  //mainNode = getMainNode(node);
+
+  mainNode = node;
+
+  if (mainNode.id === "Introduction") {
+    $.ajax({
+      type: "GET",
+      url: baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id,
+      crossDomain: true,
+      contentType: "application/json",
+      dataType: 'json',
+      success: function (response) {
+        let s = "<div class='panel-group' id='accordion'>";
+        for (let i = 0; i <= response.length - 1; i++) {
+          const item = response[i];
+          s = s + "<div class='panel panel-default'>" +
+              "      <div class='panel-heading'>" +
+              "         <span class='panel-title'>" +
+              "            <a data-bs-toggle='collapse' data-parent='#accordion' href='#collapse" + (i + 1) + "'>" + item.id + "</a>" +
+              "         </span>" +
+              "      </div>" +
+              "      <div id='collapse" + (i + 1) + "' class='panel-collapse collapse'>" +
+              "   <div class='panel-body'><ul>";
+          if (item.phrases != null) {
+            for (let j = 0; j <= item.phrases.length - 1; j++) {
+              s = s + "<li>" + item.phrases[j].option + "</li>";
+            }
+          }
+          s = s + " <ul></div>";
+          s = s + " </div>";
+        }
+        $("#nodeContent").html(s);
+      }
+    });
+  }
+}
+
+
 function loadLab(mapID) {
 
 
-
-
-
-
-  var dbRef = ref(database,'maps/' + mapID);
+  var dbRef = ref(database, 'maps/' + mapID);
   onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
     if (data != null) {
       if (data.meta.version !== mindCurrentVer) {
         jm.show(data);
         jm.docType = data.docType;
+        $("jmnode").click(function () {
+          showNode(this)
+        })
       }
     } else {
       jm.show(template_English());
@@ -327,9 +403,16 @@ function getMapID() {
 //     });
 //   });
 // }
+// function getMainNode(node) {
+//   if (node.parent.level === 1)
+//     return node.parent;
+//   else
+//     return getMainNode(node.parent);
+// }
 </script>
 
 <style scoped>
+
 #jsmind_container {
   min-height: 75vh;
 }

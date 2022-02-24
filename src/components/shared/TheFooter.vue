@@ -7,7 +7,7 @@
         <div class="row">
           <!-- Grid column -->
           <div class="col-md-2">
-            <img src="../assets/images/graduation.svg" width="70" height="70"/>
+            <img src="../../assets/images/graduation.svg" width="70" height="70"/>
             <h5>
               iScholar
             </h5>
@@ -34,15 +34,18 @@
         <!-- Grid row -->
       </div>
     </section>
-    <!-- Copyright -->
-    <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">© 2021 Copyright <a
-        class="text-reset fw-bold" href="https://ischolar.com/">iScholar.com</a></div>
+    <TheCopyright/>
   </footer>
 </template>
 
 <script>
+import TheCopyright from './TheCopyright.vue'
+
 export default {
-  name: "TheFooter"
+  name: "FooterFragment",
+  components: {
+    TheCopyright
+  }
 }
 </script>
 
