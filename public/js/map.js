@@ -91,7 +91,7 @@ $(function () {
 });
 
 
-function showChat(me, uid) {
+ showChat(me, uid) {
     sendTo = uid;
     if (refChat != null)
         refChat.off()

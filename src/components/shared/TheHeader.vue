@@ -13,12 +13,12 @@
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown1" role="button"
              data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">File</a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
-            <a class="dropdown-item" href="#" id="dropdown-item-new" onclick="new_map();">New</a>
-            <input id="file_input" style="display: none" type="file" onchange="open_file()"/>
+            <a class="dropdown-item" id="dropdown-item-new" @click="newMap">New</a>
+            <input id="file_input" style="display: none" type="file" @change="open_file"/>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="#" onclick="download_file();"><span>Export</span></a>
-            <a class="dropdown-item" href="#" id="upload_link"><span></span>Import</a>
-            <a class="dropdown-item" href="#" onclick="screen_shot();">Screenshot</a>
+            <a class="dropdown-item" @click="exportMap">Export</a>
+            <a class="dropdown-item" @click="importMap">Import</a>
+            <a class="dropdown-item" @click="screenshotMap">Screenshot</a>
           </div>
         </li>
 
@@ -28,8 +28,8 @@
             View
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
-            <a class="dropdown-item" href="#" onclick="zoomIn()">Zoom in</a>
-            <a class="dropdown-item" href="#" onclick="zoomOut()">Zoom out </a>
+            <a class="dropdown-item" @click="zoomIn">Zoom in</a>
+            <a class="dropdown-item" @click="zoomOut">Zoom out </a>
           </div>
         </li>
 
@@ -39,10 +39,7 @@
             Publish
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
-            <a class="dropdown-item" href="publish.html?c=s">
-              <router-link to="/publish">Scopus</router-link>
-
-            </a>
+            <router-link class="dropdown-item" to="/publish">Scopus</router-link>
             <!--                    <a class="dropdown-item" href="?c=v">Local Journals</a>-->
             <!--                    <a class="dropdown-item" href="?c=c">Top Conferences</a>-->
           </div>
@@ -51,7 +48,7 @@
 
       <ul class="navbar-nav ms-auto navbar-right">
 
-        <button id="btnRoom" type="button" class="btn btn-primary ml-2 user d-none" data-bs-toggle="collapse" data-bs-target="#collapse-online">
+        <button id="btnRoom" @click="showChat" type="button" class="btn btn-primary ml-2 user d-none" data-bs-toggle="collapse" data-bs-target="#collapse-online">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people-fill"
                viewBox="0 0 16 16">
             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
@@ -59,8 +56,7 @@
                   d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
             <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
           </svg>
-          <span class="hideSmall">Chat room</span> <span class="badge badge-secondary bg-secondary"
-                                                         id="numOnline">0</span>
+          <span class="hideSmall">Chat room</span> <span class="badge badge-secondary bg-secondary" id="numOnline">0</span>
         </button>
 
         <button id="btnLogin" type="button" class="btn btn-primary me-auto" data-bs-toggle="modal" data-bs-target="#loginModal">Đăng nhập</button>
@@ -77,7 +73,7 @@
             </div>
             <div class="list-group list-group-flush">
               <a href="/mylabs" class="list-group-item list-group-item-action">Lab của tôi</a>
-              <a href="#" class="list-group-item list-group-item-action text-danger" id="signout">Đăng xuất</a>
+              <a class="list-group-item list-group-item-action text-danger" id="signout" @click="signOut">Đăng xuất</a>
             </div>
           </div>
 
@@ -85,19 +81,20 @@
       </ul>
 
     </div>
-    <div class="modal fade login" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-         aria-hidden="true">
+
+
+    <div class="modal fade login" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog login animated">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Đăng nhập với</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="close"></button>
           </div>
           <div class="modal-body">
             <div class="box">
               <div class="content">
                 <div class="social">
-                  <a id="google_login" class="circle google" href="#">
+                  <a id="google_login" class="circle google" @click="googleLogin">
                     <i class="bi bi-google"></i>
                   </a>
                   <a class="circle ">
@@ -116,10 +113,8 @@
                 <div class="form loginBox">
                   <form method="" action="" accept-charset="UTF-8">
                     <input id="email1" class="form-control" type="text" placeholder="Email" name="email">
-                    <input id="password1" class="form-control" type="password" placeholder="Password"
-                           name="password">
-                    <input class="btn btn-default btn-login" type="button" value="Đăng nhập"
-                           onclick="loginAjax()">
+                    <input id="password1" class="form-control" type="password" placeholder="Password" name="password">
+                    <input class="btn btn-default btn-login" type="button" value="Đăng nhập" onclick="loginAjax()">
                   </form>
                 </div>
               </div>
@@ -158,73 +153,151 @@
   </nav>
 
 
+  <ChatBox/>
+
+
 </template>
 
 <script>
 
 import 'bootstrap-icons/font/bootstrap-icons.css'
-import {onValue, ref, onDisconnect, set} from "firebase/database";
-import {firebase} from "@/firebase";
+import {onValue, ref, onDisconnect, set, update, off} from "firebase/database";
+
 import {database} from "@/firebase";
 import $ from "jquery"
 import {getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut} from "firebase/auth";
+import utils from "@/utils";
+import ChatBox from "@/components/fragments/ChatBox";
 
-let currentUser = null
+
+let comp = null;
+var dbRef;
 export default {
   name: 'NavigationBar',
+  data() {
+    return {
+      currentUser: {}
+    }
+  },
   mounted() {
+    comp = this;
     const auth = getAuth();
-
     onAuthStateChanged(auth, function (user) {
       if (user) {  //Neu dang nhap roi
-        currentUser = user;
+        comp.emitter.emit('userLogged', user)
         afterLogin(user);
         presence(user);
+        comp.enterRoom(user)
       } else { //Neu chua dang nhap
         $('#btnLogin').removeClass("d-none")
-        if (((window.location.pathname.startsWith("/room")) || (window.location.pathname.startsWith("/mylabs")))) //Bat buoc phai dang nhap
-          $('#loginModal').modal('show')  //Hien form dang nhap
-        //    afterNotLogin();
       }
     });
+    this.emitter.on('chatUpdated', (data) => {
+      if (data)
+        $('#numOnline').text(Object.keys(data).length)
+    })
 
-    $('a#google_login').click(function () {
+  },
+  methods: {
+    enterRoom(user) {
+      dbRef = ref(database, 'chats/' + utils.getMapID(this) + "/users");
+      let leave = {};
+      leave[user.uid] = null;
+
+      let enter = {};
+      enter[user.uid] = {
+        //time: firebase.database.ServerValue.TIMESTAMP,
+        name: user.displayName,
+        photo: user.photoURL
+      };
+
+      onValue(ref(database, '.info/connected'), function (snapshot) {
+        if (snapshot.val() == false)
+          return;
+        onDisconnect(dbRef).update(leave).then(function () {
+          update(dbRef, enter)
+        });
+      });
+    },
+    signOut() {
+      const auth = getAuth();
+      signOut(auth).then(() => {
+
+        $('.user').addClass("d-none");
+        $('#btnLogin').text("Đăng nhập");
+        $('#btnLogin').addClass("rounded")
+        $('#profilePicture').addClass("d-none")
+        $('#btnLogin').removeClass("d-none")
+        $('#collapse-profile').removeClass("show")
+        var userStatusDatabaseRef = ref(database, '/status/' + this.currentUser.uid);
+        var isOfflineForDatabase = {
+          state: 'offline',
+          // last_changed:  firebase.database.ServerValue.TIMESTAMP,
+        };
+        set(userStatusDatabaseRef, isOfflineForDatabase)
+        if (dbRef) {
+          let leave = {};
+          leave[this.currentUser.uid] = null;
+          update(dbRef, leave);
+          // sendNotify("all", null, TOAST_LEAVE_ROOM);
+          $('#main').hide();
+          $('#drawer').hide();
+          $('.room').addClass("d-none")
+          if (dbRef)
+            off(dbRef)
+        }
+      });
+    },
+    googleLogin() {
+      $('#close').click();
       const provider = new GoogleAuthProvider();
       const auth = getAuth();
       signInWithPopup(auth, provider)
           .then((result) => {
-            // currentUser = user;
+            this.currentUser = result.user;
             presence(result.user)
             afterLogin(result.user);
           }).catch(() => {
       });
-    });
-    $('#signout').click(function () {
-      logOut();
-    })
+    },
+    newMap() {
+      this.$router.push('/map/' + utils.makeId(6))
+    },
+    exportMap() {
+      this.emitter.emit('exportMap')
+    },
+    importMap() {
+      // this.emitter.emit('importMap')
+      $("#file_input:hidden").trigger('click');
+    },
+    screenshotMap() {
+      this.emitter.emit('screenshotMap')
+    },
+    open_file() {
+      let files = document.getElementById('file_input').files;
+      if (files.length > 0)
+        this.emitter.emit('importMap', files[0])
+    },
+    zoomIn() {
+      this.emitter.emit('zoomIn')
+    },
+    zoomOut() {
+      this.emitter.emit('zoomOut')
+    },
+    showChat() {
+      var firstEnterRoom = true
+
+      if (firstEnterRoom) {
+        this.emitter.emit('showChat')
+        firstEnterRoom = false;
+      }
+    }
+  },
+  components: {
+    ChatBox
   }
 }
 
-function logOut() {
-  const auth = getAuth();
-  signOut(auth).then(() => {
-    $('.user').addClass("d-none");
-    $('#btnLogin').text("Đăng nhập");
-    $('#btnLogin').addClass("rounded")
-    $('#profilePicture').addClass("d-none")
-    $('#btnLogin').removeClass("d-none")
-    $('#collapse-profile').removeClass("show")
-    var userStatusDatabaseRef = firebase.database().ref('/status/' + currentUser.uid);
-    var isOfflineForDatabase = {
-      state: 'offline',
-      // last_changed:  firebase.database.ServerValue.TIMESTAMP,
-    };
-    userStatusDatabaseRef.set(isOfflineForDatabase)
-    // if (refUsers) {
-    //   logoutRoom();
-    // }
-  });
-}
 
 function afterLogin(user) {
   $(".user").removeClass("d-none")
@@ -240,7 +313,6 @@ function afterLogin(user) {
     $(".userName").text(user.displayName)
     $(".userName").nameBadge()
   }
-
   $('#profileName').text(user.displayName)
   $('#profileEmail').text(user.email)
 
@@ -252,6 +324,7 @@ function afterLogin(user) {
   // else if (window.location.pathname.startsWith("/map"))
   //     enterLab();
 }
+
 
 function presence(user) {
   var uid = user.uid;

@@ -4,161 +4,243 @@
 
 <script>
 import "jsmind/style/jsmind.css";
+
+global.jsMind = require('jsmind');
+require('jsmind/js/jsmind.draggable');
+require('jsmind/js/jsmind.screenshot');
+
 import jsMind from "jsmind"
 import {database} from "@/firebase";
-import {ref, onValue} from "firebase/database";
+import {ref, onValue, set} from "firebase/database";
 import $ from "jquery"
+import axios from "axios";
+import utils from "@/utils";
 //let baseAPI = "https://localhost"
 let baseAPI = "https://www.vncodelab.com"
-var mindCurrentVer = "";
-var jm = null;
-var selectedNode = null;
+let mindCurrentVer = "";
+
+let jm = null
+
 export default {
   name: "MindMap",
-  setup() {
-
-  },
-
-  mounted() {
-    var mind = {
-      "meta": {},
-      "data": {
-        "id": "root",
-        "topic": "...",
+  data() {
+    return {
+      currentUser: {},
+      id: this.$route.params.id,
+      selectedNode: {},
+      mind: {
+        "meta": {},
+        "data": {
+          "id": "root",
+          "topic": "...",
+        }
       }
-    };
-    var options = {
+    }
+  },
+  watch: {
+    '$route'(to) {
+      this.id = to.params.id
+      this.loadLab(utils.getMapID(this));
+    }
+  },
+  mounted() {
+    let comp = this;
+    const options = {
       container: 'jsmind_container',
       editable: true,
+
       theme: 'primary',
       keep_center: false
     }
-    jm = jsMind.show(options, mind);
+    jm = jsMind.show(options, this.mind);
+
+    jm.add_event_listener((data) => {
+      if (data == jsMind.event_type.show)
+        console.log("show")
+      else if (data == jsMind.event_type.resize)
+        console.log("resize")
+      else if (data == jsMind.event_type.select)
+        console.log("select")
+      else if (data == jsMind.event_type.edit) {
+        console.log("edit")
+        this.savetoCloud()
+      }
+    })
     const urlSearchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(urlSearchParams.entries());
     if (params['action'] === "new") {
       //$('#addMapModal').modal('show')
     } else {
-      loadLab(getMapID());
+      this.loadLab(utils.getMapID(this));
     }
 
-    // var firstEnterRoom = true
-    // $('#btnRoom').click(function () {
-    //   if (firstEnterRoom) {
-    //     showChat($('#chat0'), "all")
-    //     firstEnterRoom = false;
-    //   }
-    // })
+    $("#UserNotes").change(function () {
+      comp.selectedNode.data.usernote = $("#UserNotes").val();
+      comp.savetoCloud();
+    })
+    this.emitter.on('userLogged', (user) => {
+      this.currentUser = user;
 
-    // $("#UserNotes").change(function () {
-    //   selectedNode.data.usernote = $("#UserNotes").val();
-    //   savetoCloud();
-    // })
-
-    // var options = {
-    //   container: "jsmind_container",
-    //   editable: true,
-    //   theme: "primary",
-    // };
-    // var jm = jsMind.show(options, mind);
-    // jm.add_node("sub2", "sub23", "new node", {"background-color": "red"});
-    // jm.set_node_color("sub21", "green", "#ccc");
-  }
-}
-
-function showNode(nodeElement) {
-  let node = jm.get_node(nodeElement.getAttribute("nodeid"))
-  $("#nodeContent").empty();
-  console.log(node)
-  if (node != null && node.isroot) { //root
-    // var dialog = $("#dialog-form").dialog({
-    //   autoOpen: false,
-    //   height: 400,
-    //   width: 350,
-    //   modal: true,
-    //   buttons: {
-    //
-    //     Cancel: function () {
-    //       dialog.dialog("close");
-    //     }
-    //   },
-    //   close: function () {
-    //     //form[0].reset();
-    //   //  allFields.removeClass("ui-state-error");
-    //   }
-    // });
-    $("#nodeContent").html("<a href = '#' onclick='generateDoc()'>Generate Document</a>");
-
-  }
-
-  if (node != null && node.data != null && node.data.usernote != null)
-    $("#UserNotes").val(node.data.usernote);
-  else
-    $("#UserNotes").val("");
-  selectedNode = node;
-  console.log(selectedNode)
-
-  let mainNode;
-  // if (node.level >= 1) {
-  //   if (node.level == 1)
-  //     mainNode = node;
-  //   else
-  //mainNode = getMainNode(node);
-
-  mainNode = node;
-
-  if (mainNode.id === "Introduction") {
-    $.ajax({
-      type: "GET",
-      url: baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id,
-      crossDomain: true,
-      contentType: "application/json",
-      dataType: 'json',
-      success: function (response) {
-        let s = "<div class='panel-group' id='accordion'>";
-        for (let i = 0; i <= response.length - 1; i++) {
-          const item = response[i];
-          s = s + "<div class='panel panel-default'>" +
-              "      <div class='panel-heading'>" +
-              "         <span class='panel-title'>" +
-              "            <a data-bs-toggle='collapse' data-parent='#accordion' href='#collapse" + (i + 1) + "'>" + item.id + "</a>" +
-              "         </span>" +
-              "      </div>" +
-              "      <div id='collapse" + (i + 1) + "' class='panel-collapse collapse'>" +
-              "   <div class='panel-body'><ul>";
-          if (item.phrases != null) {
-            for (let j = 0; j <= item.phrases.length - 1; j++) {
-              s = s + "<li>" + item.phrases[j].option + "</li>";
-            }
-          }
-          s = s + " <ul></div>";
-          s = s + " </div>";
+    })
+    this.emitter.on('exportMap', () => {
+      jsMind.util.file.save(jsMind.util.json.json2string(jm.get_data()), 'text/jsmind', jm.get_data().meta.name + '.json');
+    })
+    this.emitter.on('importMap', (data) => {
+      jsMind.util.file.read(data, function (jsmind_data) {
+        let mind = jsMind.util.json.string2json(jsmind_data);
+        if (mind) {
+          jm.show(mind);
+          comp.savetoCloud();
+        } else {
+          // prompt_info('can not open this file as mindmap');
         }
-        $("#nodeContent").html(s);
+      });
+    })
+    this.emitter.on('screenshotMap', () => {
+      jm.screenshot.shootDownload()
+    })
+    this.emitter.on('zoomIn', () => {
+      jm.view.zoomIn()
+    })
+    this.emitter.on('zoomOut', () => {
+      jm.view.zoomOut()
+    })
+
+
+  },
+  methods: {
+
+    showNode(nodeElement) {
+      let node = jm.get_node(nodeElement.getAttribute("nodeid"))
+      $("#nodeContent").empty();
+      if (node != null && node.isroot) { //root
+        // var dialog = $("#dialog-form").dialog({
+        //   autoOpen: false,
+        //   height: 400,
+        //   width: 350,
+        //   modal: true,
+        //   buttons: {
+        //     Cancel: function () {
+        //       dialog.dialog("close");
+        //     }
+        //   },
+        //   close: function () {
+        //     //form[0].reset();
+        //   //  allFields.removeClass("ui-state-error");
+        //   }
+        // });
+        $("#nodeContent").html("<a href = '#' onclick='generateDoc()'>Generate Document</a>");
+
       }
-    });
-  }
-}
+
+      if (node != null && node.data != null && node.data.usernote != null)
+        $("#UserNotes").val(node.data.usernote);
+      else
+        $("#UserNotes").val("");
+
+      this.selectedNode = node;
 
 
-function loadLab(mapID) {
+      let mainNode;
+      // if (node.level >= 1) {
+      //   if (node.level == 1)
+      //     mainNode = node;
+      //   else
+      //mainNode = getMainNode(node);
+
+      mainNode = node;
+
+      if (mainNode.id === "Introduction") {
+
+        axios.get(baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id).then(
+            response => {
+              let s = "<div class='panel-group' id='accordion'>";
+              for (let i = 0; i <= response.length - 1; i++) {
+                const item = response[i];
+                s = s + "<div class='panel panel-default'>" +
+                    "      <div class='panel-heading'>" +
+                    "         <span class='panel-title'>" +
+                    "            <a data-bs-toggle='collapse' data-parent='#accordion' href='#collapse" + (i + 1) + "'>" + item.id + "</a>" +
+                    "         </span>" +
+                    "      </div>" +
+                    "      <div id='collapse" + (i + 1) + "' class='panel-collapse collapse'>" +
+                    "   <div class='panel-body'><ul>";
+                if (item.phrases != null) {
+                  for (let j = 0; j <= item.phrases.length - 1; j++) {
+                    s = s + "<li>" + item.phrases[j].option + "</li>";
+                  }
+                }
+                s = s + " <ul></div>";
+                s = s + " </div>";
+              }
+              $("#nodeContent").html(s);
+            }
+        )
 
 
-  var dbRef = ref(database, 'maps/' + mapID);
-  onValue(dbRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data != null) {
-      if (data.meta.version !== mindCurrentVer) {
-        jm.show(data);
-        jm.docType = data.docType;
-        $("jmnode").click(function () {
-          showNode(this)
-        })
+        // $.ajax({
+        //   type: "GET",
+        //   url: baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id,
+        //   crossDomain: true,
+        //   contentType: "application/json",
+        //   dataType: 'json',
+        //   success: function (response) {
+        //     let s = "<div class='panel-group' id='accordion'>";
+        //     for (let i = 0; i <= response.length - 1; i++) {
+        //       const item = response[i];
+        //       s = s + "<div class='panel panel-default'>" +
+        //           "      <div class='panel-heading'>" +
+        //           "         <span class='panel-title'>" +
+        //           "            <a data-bs-toggle='collapse' data-parent='#accordion' href='#collapse" + (i + 1) + "'>" + item.id + "</a>" +
+        //           "         </span>" +
+        //           "      </div>" +
+        //           "      <div id='collapse" + (i + 1) + "' class='panel-collapse collapse'>" +
+        //           "   <div class='panel-body'><ul>";
+        //       if (item.phrases != null) {
+        //         for (let j = 0; j <= item.phrases.length - 1; j++) {
+        //           s = s + "<li>" + item.phrases[j].option + "</li>";
+        //         }
+        //       }
+        //       s = s + " <ul></div>";
+        //       s = s + " </div>";
+        //     }
+        //     $("#nodeContent").html(s);
+        //   }
+        // });
       }
-    } else {
-      jm.show(template_English());
+    },
+    loadLab(mapID) {
+      let com = this;
+      var dbRef = ref(database, 'maps/' + mapID);
+      onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        this.mind = data;
+        if (this.mind) {
+
+          if (this.mind.meta.version !== mindCurrentVer) {
+            jm.show(this.mind);
+            jm.docType = this.mind.docType;
+            $("jmnode").click(function () {
+              com.showNode(this)
+            })
+          }
+        } else {
+          jm.show(template_English());
+        }
+      });
+
+
+    },
+    savetoCloud(save = 1) {
+      mindCurrentVer = utils.makeId(10);
+      if (save === 1) {
+        var mind_data = jm.get_data();
+        mind_data.meta.version = mindCurrentVer;
+        var dbRef = ref(database, 'maps/' + utils.getMapID(this));
+        set(dbRef, mind_data)
+      }
     }
-  });
+  }
 }
 
 function template_English() {
@@ -258,16 +340,6 @@ function template_English() {
   }
 }
 
-
-function getMapID() {
-  // return "2M73DO"; //TODO test
-  // return (new URL(window.location.href)).searchParams.get('room')
-  var arr = (new URL(window.location.href)).pathname.split("/");
-  var mapID = arr[arr.length - 1]
-  if (mapID === "map.html")
-    mapID = "2M73DO"
-  return "2M73DO"
-}
 
 // function afterLogin(user) {
 //   $(".user").removeClass("d-none")

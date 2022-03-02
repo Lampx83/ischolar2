@@ -7,7 +7,7 @@ import PublishPage from "@/components/PublishPage";
 const routes = [
     {path: '/', name: 'homepage', component: HomePage},
     {path: '/user', name: 'user', component: UserDetail},
-    {path: '/map', name: 'map', component: MapPage},
+    {path: '/map/:id', name: 'map', component: MapPage},
     {path: '/publish', name: 'publish', component: PublishPage}
 ]
 export const router = createRouter({
