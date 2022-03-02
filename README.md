@@ -28,6 +28,5 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 ```bash
 firebase emulators:start
 npm run build 
-đổi public thành dist
 firebase deploy
 ```
