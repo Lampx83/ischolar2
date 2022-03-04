@@ -1,8 +1,6 @@
 <template>
   <NavigationBar/>
-
   <div class="row">
-
     <MindMap/>
     <NodeDetail/>
   </div>
@@ -13,7 +11,7 @@
 import FooterFragment from './shared/TheFooter.vue'
 import NavigationBar from './shared/TheHeader.vue'
 import MindMap from './fragments/MindMap.vue'
-import NodeDetail from './NodeDetail.vue'
+import NodeDetail from './fragments/NodeDetail.vue'
 export default {
   name: 'App',
   components: {

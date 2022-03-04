@@ -32,7 +32,6 @@
             <a class="dropdown-item" @click="zoomOut">Zoom out </a>
           </div>
         </li>
-
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown4" role="button"
              data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -45,10 +44,8 @@
           </div>
         </li>
       </ul>
-
       <ul class="navbar-nav ms-auto navbar-right">
-
-        <button id="btnRoom" @click="showChat" type="button" class="btn btn-primary ml-2 user d-none" data-bs-toggle="collapse" data-bs-target="#collapse-online">
+        <button  v-if="currentUser" id="btnRoom" @click="showChat" type="button" class="btn btn-primary ml-2" data-bs-toggle="collapse" data-bs-target="#collapse-online">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people-fill"
                viewBox="0 0 16 16">
             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
@@ -76,10 +73,8 @@
               <a class="list-group-item list-group-item-action text-danger" id="signout" @click="signOut">Đăng xuất</a>
             </div>
           </div>
-
         </div>
       </ul>
-
     </div>
 
 
@@ -149,15 +144,9 @@
         </div>
       </div>
     </div>
-
   </nav>
-
-
   <ChatBox/>
-
-
 </template>
-
 <script>
 
 import 'bootstrap-icons/font/bootstrap-icons.css'
@@ -176,7 +165,7 @@ export default {
   name: 'NavigationBar',
   data() {
     return {
-      currentUser: {}
+      currentUser:null
     }
   },
   mounted() {

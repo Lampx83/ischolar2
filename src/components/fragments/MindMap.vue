@@ -146,17 +146,16 @@ export default {
       //   if (node.level == 1)
       //     mainNode = node;
       //   else
-      //mainNode = getMainNode(node);
+      mainNode = getMainNode(node);
 
-      mainNode = node;
-
-      if (mainNode.id === "Introduction") {
-
+      if (getNodeLevel(mainNode) == 2) {
+        console.log("Enter")
         axios.get(baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id).then(
             response => {
+              console.log("Enter2")
               let s = "<div class='panel-group' id='accordion'>";
-              for (let i = 0; i <= response.length - 1; i++) {
-                const item = response[i];
+              for (let i = 0; i <= response.data.length - 1; i++) {
+                const item = response.data[i];
                 s = s + "<div class='panel panel-default'>" +
                     "      <div class='panel-heading'>" +
                     "         <span class='panel-title'>" +
@@ -176,60 +175,26 @@ export default {
               $("#nodeContent").html(s);
             }
         )
-
-
-        // $.ajax({
-        //   type: "GET",
-        //   url: baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id,
-        //   crossDomain: true,
-        //   contentType: "application/json",
-        //   dataType: 'json',
-        //   success: function (response) {
-        //     let s = "<div class='panel-group' id='accordion'>";
-        //     for (let i = 0; i <= response.length - 1; i++) {
-        //       const item = response[i];
-        //       s = s + "<div class='panel panel-default'>" +
-        //           "      <div class='panel-heading'>" +
-        //           "         <span class='panel-title'>" +
-        //           "            <a data-bs-toggle='collapse' data-parent='#accordion' href='#collapse" + (i + 1) + "'>" + item.id + "</a>" +
-        //           "         </span>" +
-        //           "      </div>" +
-        //           "      <div id='collapse" + (i + 1) + "' class='panel-collapse collapse'>" +
-        //           "   <div class='panel-body'><ul>";
-        //       if (item.phrases != null) {
-        //         for (let j = 0; j <= item.phrases.length - 1; j++) {
-        //           s = s + "<li>" + item.phrases[j].option + "</li>";
-        //         }
-        //       }
-        //       s = s + " <ul></div>";
-        //       s = s + " </div>";
-        //     }
-        //     $("#nodeContent").html(s);
-        //   }
-        // });
       }
     },
     loadLab(mapID) {
       let com = this;
-      var dbRef = ref(database, 'maps/' + mapID);
+      let dbRef = ref(database, 'maps/' + mapID);
       onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         this.mind = data;
         if (this.mind) {
-
           if (this.mind.meta.version !== mindCurrentVer) {
             jm.show(this.mind);
             jm.docType = this.mind.docType;
-            $("jmnode").click(function () {
-              com.showNode(this)
-            })
           }
         } else {
           jm.show(template_English());
         }
+        $("jmnode").click(function () {
+          com.showNode(this)
+        })
       });
-
-
     },
     savetoCloud(save = 1) {
       mindCurrentVer = utils.makeId(10);
@@ -242,6 +207,7 @@ export default {
     }
   }
 }
+
 
 function template_English() {
   return {
@@ -475,12 +441,23 @@ function template_English() {
 //     });
 //   });
 // }
-// function getMainNode(node) {
-//   if (node.parent.level === 1)
-//     return node.parent;
-//   else
-//     return getMainNode(node.parent);
-// }
+function getMainNode(node) {
+  while (getNodeLevel(node) != 2) {
+    node = node.parent;
+  }
+  return node;
+}
+
+function getNodeLevel(node) {
+  let depth = 1;
+  while (!node.isroot) {
+    depth++;
+    node = node.parent;
+  }
+  return depth;
+}
+
+
 </script>
 
 <style scoped>
