@@ -13,8 +13,21 @@ module.exports = {
     },
     time_ago: function (time) {
         return TimeAgo.inWords(new Date(time).getTime());
+    },
+    getMainNode: function (node) {
+        while (node.data.level > 1) {
+            node = node.parent;
+        }
+        return node;
+    },
+    getNodeLevel: function (node) {
+        let depth = 0;
+        while (!node.isroot) {
+            depth++;
+            node = node.parent;
+        }
+        return depth;
     }
-
 }
 
 var TimeAgo = (function () {

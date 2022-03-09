@@ -4,12 +4,16 @@
     <div class="col-4 px-0 chat-leftside">
       <div class="messages-box">
         <div class="list-group rounded-0">
-          <a
-              class="list-group-item list-group-item-action active text-white rounded-0 media uchat" id="chat0">
+          <a class="list-group-item list-group-item-action active text-white rounded-0 media uchat" id="chat0">
             <img src="../../assets/images/people-fill.svg" alt="user" width="50" class="rounded-circle">
-            <span class="media-body text-small">Tất cả</span>
+            <span class="media-body text-small">All</span>
           </a>
           <div id="usersChat">
+            <template v-for="user in users" :key="user.key">
+              <a class="list-group-item list-group-item-action rounded-0 media uchat"><img :src='user.photo' alt='user' width='40' height='40' class='rounded-circle'><span class="media-body text-small ps-1">{{
+                  user.name
+                }}</span></a>
+            </template>
           </div>
         </div>
       </div>
@@ -18,22 +22,16 @@
     <!-- Chat Box-->
     <div class="col-8 px-0 main-chat">
       <div class="px-4 pt-4 chat-box bg-white" id="chatMessages">
-
       </div>
-
       <!-- Typing area -->
       <div class="bg-light input-group">
-
-        <input id="txtMessage" type="text" autocomplete="off" placeholder="Type a message"
-               aria-describedby="button-addon2" class="form-control rounded-0 border-0 bg-light">
+        <input id="txtMessage" v-on:keyup.enter="sendMessage" type="text" autocomplete="off" placeholder="Type a message" aria-describedby="button-addon2" class="form-control rounded-0 border-0 bg-light">
         <div class="input-group-append">
           <button id="button-addon2" class="btn btn-link" @click="sendMessage">
             <img width="30" height="30" src="../../assets/images/send-button.svg"/>
           </button>
         </div>
-
       </div>
-
     </div>
   </div>
 </template>
@@ -44,44 +42,61 @@ import $ from "jquery"
 // var refChat;
 // var sendTo;
 import {database} from "@/firebase";
-import {ref, push, child, update, set, onChildAdded, onValue} from "firebase/database";
+import {ref, onChildAdded, push, child, update, onValue, off} from "firebase/database";
 import utils from "@/utils";
 
+let comp = null;
+let refChat;
+let refUsers;
 export default {
   name: "ChatBox",
   data() {
     return {
-      currentUser: {}
+      currentUser: {},
+      users: []
     }
   },
   mounted() {
-    let refChat = ref(database, 'chats/' + utils.getMapID(this));
 
-    let refUsers = ref(database, 'chats/' + utils.getMapID(this)+"/users");
-
-    onValue(refUsers, (snapshot) => {
-      const data = snapshot.val();
-      this.emitter.emit('chatUpdated', data)
-      $('#usersChat').empty()
-      for (var uid in data) {
-        //Add to chat room
-        // if (currentUser.uid != uid) {  //Kh
-        let avatar = "<img src='" + data[uid].photo + "' alt='user' width='40' height='40'  class='rounded-circle'>";
-        if (!data[uid].photo && data[uid].name) {
-          avatar = "<div><div class='friend'>" + data[uid].name + "</div></div>"
+    this.emitter.on('userLogged', (user) => {
+      this.currentUser = user
+      if (user) {  //Logged in
+        comp = this;
+        refUsers = ref(database, 'rooms/' + utils.getMapID(this) + "/users");
+        onValue(refUsers, (snapshot) => {
+          console.log("onValue")
+          const data = snapshot.val();
+          if (data) {
+            this.users = data
+            this.emitter.emit('chatUpdated', comp.users)
+            // for (var uid in data) {
+            //   let avatar = "<img src='" + data[uid].photo + "' alt='user' width='40' height='40'  class='rounded-circle'>";
+            //   if (!data[uid].photo && data[uid].name) {
+            //     avatar = "<div><div class='friend'>" + data[uid].name + "</div></div>"
+            //   }
+            //   $('#usersChat').append("<a onclick='showChat(this,\"" + uid + "\")' class=\"list-group-item list-group-item-action rounded-0 media uchat\">" + avatar + "<span class=\"media-body text-small ps-1\">" + data[uid].name + "</span></a>")
+            //   if (!data[uid].photo && data[uid].name) {
+            //     $('.friend').nameBadge();
+            //   }
+            // }
+          }
+        });
+        if(refChat==null) {
+          refChat = ref(database, 'rooms/' + utils.getMapID(this) + "/chats");
+          onChildAdded(refChat, (data) => {
+            this.showMessage(data.val());
+          });
         }
-        $('#usersChat').append("<a onclick='showChat(this,\"" + uid + "\")' class=\"list-group-item list-group-item-action rounded-0 media uchat\">" + avatar + "<span class=\"media-body text-small ps-1\">" + data[uid].name + "</span></a>")
-        if (!data[uid].photo && data[uid].name) {
-          $('.friend').nameBadge();
+      } else {
+        if (refUsers) {
+          off(refUsers)
+          refUsers = null;
+        }
+        if (refChat) {
+          off(refChat)
+          refChat = null;
         }
       }
-
-    });
-    onChildAdded(refChat, (data) => {
-      this.showMessage(data.val());
-    });
-    this.emitter.on('userLoged', (user) => {
-      this.currentUser = user
     })
 
   },
@@ -106,32 +121,34 @@ export default {
       if ($('#txtMessage').val().trim() !== "") {
         let updates = {};
         let key = push(child(ref(database), 'post')).key;
-        updates['/chats/' + utils.getMapID(this) + '/' + key] = {
+        updates['/rooms/' + utils.getMapID(this) + '/chats/' + key] = {
           uid: this.currentUser.uid,
           name: this.currentUser.displayName,
           photo: this.currentUser.photoURL,
           //time: firebase.database.ServerValue.TIMESTAMP,
           message: $('#txtMessage').val()
         };
+
         update(ref(database), updates);
 
         //if (sendTo === "all") {
-        var refUpdate = ref(database, '/maps/' + utils.getMapID(this) + '/notifies/all')
-        // } else {
-        //   refUpdate = ref(database, '/notifies/' + sendTo)
-        // }
-        set(refUpdate, {
-          //  uid: this.currentUser.uid,
-          // uname: this.currentUser.displayName,
-          message: $('#txtMessage').val(),
-          //time: firebase.database.ServerValue.TIMESTAMP
-        });
+        // var refUpdate = ref(database, '/maps/' + utils.getMapID(this) + '/notifies/all')
+        // // } else {
+        // //   refUpdate = ref(database, '/notifies/' + sendTo)
+        // // }
+        // set(refUpdate, {
+        //   //  uid: this.currentUser.uid,
+        //   // uname: this.currentUser.displayName,
+        //   message: $('#txtMessage').val(),
+        //   //time: firebase.database.ServerValue.TIMESTAMP
+        // });
         $('#txtMessage').val("")
 
         // REMOVE OLD CHAT
         // const MAX_COUNT = 99;  //Keep 100 recent
         // refChat.once('value', function (snapshot) {
-        //   if (snapshot.numChildren() > MAX_COUNT) {
+        //   if (snapshot.
+        //   numChildren() > MAX_COUNT) {
         //     var childCount = 0;
         //     var updates = {};
         //     snapshot.forEach(function (child) {
@@ -255,8 +272,6 @@ export default {
 .chat-75 {
   max-width: 55%
 }
-
-
 
 
 .messages-box,

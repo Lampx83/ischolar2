@@ -1,5 +1,5 @@
 <template>
-  <div id="jsmind_container" class="col-md-9"></div>
+  <div id="jsmind_container" class="col-md-9"> </div>
 </template>
 
 <script>
@@ -13,13 +13,46 @@ import jsMind from "jsmind"
 import {database} from "@/firebase";
 import {ref, onValue, set} from "firebase/database";
 import $ from "jquery"
-import axios from "axios";
+
 import utils from "@/utils";
-//let baseAPI = "https://localhost"
-let baseAPI = "https://www.vncodelab.com"
+
+
 let mindCurrentVer = "";
 
 let jm = null
+
+function checkNode(node, level) {
+  node.level = level
+  if (node.children) {
+    level++;
+    for (let child of node.children) {
+      checkNode(child, level)
+    }
+  }
+  changeNodeColor(node, false)
+}
+
+function changeNodeColor(node, justAdded) {
+  if (!node.level) {
+    node.level = utils.getNodeLevel(node)
+  }
+  if (node.level === 0) {
+    node['background-color'] = "#3781c0";
+  } else if (node.level === 1) {
+    node['background-color'] = "#428bca";
+  } else if (node.level === 2) {
+    node['background-color'] = "#E76F51";
+  } else if (node.level === 3) {
+    node['background-color'] = "#4d9a4e";
+  } else if (node.level === 4) {
+    node['background-color'] = "#ed9c28";//
+  } else if (node.level === 5) {
+    node['background-color'] = "#39b3d7";//
+  }
+  if (justAdded) {
+    jm.set_node_color(jm.get_selected_node().id, node['background-color'], null);
+  }
+}
 
 export default {
   name: "MindMap",
@@ -40,7 +73,7 @@ export default {
   watch: {
     '$route'(to) {
       this.id = to.params.id
-      this.loadLab(utils.getMapID(this));
+      this.loadMap(utils.getMapID(this));
     }
   },
   mounted() {
@@ -48,21 +81,35 @@ export default {
     const options = {
       container: 'jsmind_container',
       editable: true,
-
       theme: 'primary',
-      keep_center: false
+      keep_center: false,
+      shortcut: {
+        enable: true, 		// whether to enable shortcut
+        handles: {}, 			// Named shortcut key event processor
+        mapping: { 			// shortcut key mapping
+          addchild: 45, 	// <Insert>
+          addbrother: 13, // <Enter>
+          editnode: 113, 	// <F2>
+          delnode: 46, 	// <Delete>
+          toggle: 32, 	// <Space>
+          left: 37, 		// <Left>
+          up: 38, 		// <Up>
+          right: 39, 		// <Right>
+          down: 40, 		// <Down>
+        }
+      },
     }
     jm = jsMind.show(options, this.mind);
-
     jm.add_event_listener((data) => {
-      if (data == jsMind.event_type.show)
-        console.log("show")
-      else if (data == jsMind.event_type.resize)
-        console.log("resize")
-      else if (data == jsMind.event_type.select)
-        console.log("select")
-      else if (data == jsMind.event_type.edit) {
-        console.log("edit")
+      // if (data == jsMind.event_type.show)
+      //
+      // else if (data == jsMind.event_type.resize)
+      //
+      // else if (data == jsMind.event_type.select)
+      //
+      // else
+      if (data == jsMind.event_type.edit) {
+
         this.savetoCloud()
       }
     })
@@ -71,7 +118,7 @@ export default {
     if (params['action'] === "new") {
       //$('#addMapModal').modal('show')
     } else {
-      this.loadLab(utils.getMapID(this));
+      this.loadMap(utils.getMapID(this));
     }
 
     $("#UserNotes").change(function () {
@@ -80,10 +127,12 @@ export default {
     })
     this.emitter.on('userLogged', (user) => {
       this.currentUser = user;
-
     })
     this.emitter.on('exportMap', () => {
       jsMind.util.file.save(jsMind.util.json.json2string(jm.get_data()), 'text/jsmind', jm.get_data().meta.name + '.json');
+    })
+    this.emitter.on('editing', (data) => {
+      jm.options.shortcut.enable = data
     })
     this.emitter.on('importMap', (data) => {
       jsMind.util.file.read(data, function (jsmind_data) {
@@ -106,97 +155,39 @@ export default {
       jm.view.zoomOut()
     })
 
-
   },
   methods: {
-
-    showNode(nodeElement) {
-      let node = jm.get_node(nodeElement.getAttribute("nodeid"))
-      $("#nodeContent").empty();
-      if (node != null && node.isroot) { //root
-        // var dialog = $("#dialog-form").dialog({
-        //   autoOpen: false,
-        //   height: 400,
-        //   width: 350,
-        //   modal: true,
-        //   buttons: {
-        //     Cancel: function () {
-        //       dialog.dialog("close");
-        //     }
-        //   },
-        //   close: function () {
-        //     //form[0].reset();
-        //   //  allFields.removeClass("ui-state-error");
-        //   }
-        // });
-        $("#nodeContent").html("<a href = '#' onclick='generateDoc()'>Generate Document</a>");
-
-      }
-
-      if (node != null && node.data != null && node.data.usernote != null)
-        $("#UserNotes").val(node.data.usernote);
-      else
-        $("#UserNotes").val("");
-
-      this.selectedNode = node;
-
-
-      let mainNode;
-      // if (node.level >= 1) {
-      //   if (node.level == 1)
-      //     mainNode = node;
-      //   else
-      mainNode = getMainNode(node);
-
-      if (getNodeLevel(mainNode) == 2) {
-        console.log("Enter")
-        axios.get(baseAPI + "/api/v1/phrases/?sectionID=" + mainNode.id).then(
-            response => {
-              console.log("Enter2")
-              let s = "<div class='panel-group' id='accordion'>";
-              for (let i = 0; i <= response.data.length - 1; i++) {
-                const item = response.data[i];
-                s = s + "<div class='panel panel-default'>" +
-                    "      <div class='panel-heading'>" +
-                    "         <span class='panel-title'>" +
-                    "            <a data-bs-toggle='collapse' data-parent='#accordion' href='#collapse" + (i + 1) + "'>" + item.id + "</a>" +
-                    "         </span>" +
-                    "      </div>" +
-                    "      <div id='collapse" + (i + 1) + "' class='panel-collapse collapse'>" +
-                    "   <div class='panel-body'><ul>";
-                if (item.phrases != null) {
-                  for (let j = 0; j <= item.phrases.length - 1; j++) {
-                    s = s + "<li>" + item.phrases[j].option + "</li>";
-                  }
-                }
-                s = s + " <ul></div>";
-                s = s + " </div>";
-              }
-              $("#nodeContent").html(s);
-            }
-        )
-      }
-    },
-    loadLab(mapID) {
+    loadMap(mapID) {
       let com = this;
       let dbRef = ref(database, 'maps/' + mapID);
       onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         this.mind = data;
         if (this.mind) {
+
           if (this.mind.meta.version !== mindCurrentVer) {
-            jm.show(this.mind);
+            checkNode(this.mind.data, 0)
             jm.docType = this.mind.docType;
+            jm.show(this.mind);
+
           }
         } else {
-          jm.show(template_English());
+          this.mind = template_English();
+          checkNode(this.mind.data, 0)
+          jm.show(this.mind);
         }
+
         $("jmnode").click(function () {
-          com.showNode(this)
+          com.emitter.emit('showNode', jm.get_selected_node())
         })
+        $("jmnode").on('keypress', function () {
+          changeNodeColor(jm.get_selected_node(), true)
+        });
       });
     },
     savetoCloud(save = 1) {
+
+
       mindCurrentVer = utils.makeId(10);
       if (save === 1) {
         var mind_data = jm.get_data();
@@ -221,7 +212,7 @@ function template_English() {
       "id": "root",
       "topic": "Research name",
       "usernote": "Research topic",
-      "level": 0,
+      "isroot": true,
       "children": [
         {
           "id": "keyword",
@@ -441,21 +432,6 @@ function template_English() {
 //     });
 //   });
 // }
-function getMainNode(node) {
-  while (getNodeLevel(node) != 2) {
-    node = node.parent;
-  }
-  return node;
-}
-
-function getNodeLevel(node) {
-  let depth = 1;
-  while (!node.isroot) {
-    depth++;
-    node = node.parent;
-  }
-  return depth;
-}
 
 
 </script>

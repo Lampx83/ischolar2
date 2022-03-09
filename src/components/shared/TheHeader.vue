@@ -45,12 +45,10 @@
         </li>
       </ul>
       <ul class="navbar-nav ms-auto navbar-right">
-        <button  v-if="currentUser" id="btnRoom" @click="showChat" type="button" class="btn btn-primary ml-2" data-bs-toggle="collapse" data-bs-target="#collapse-online">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people-fill"
-               viewBox="0 0 16 16">
+        <button v-if="currentUser" id="btnRoom" @click="showChat" type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapse-online">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-people-fill me-1" viewBox="0 0 16 16">
             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-            <path fill-rule="evenodd"
-                  d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
+            <path d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
             <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
           </svg>
           <span class="hideSmall">Chat room</span> <span class="badge badge-secondary bg-secondary" id="numOnline">0</span>
@@ -76,7 +74,6 @@
         </div>
       </ul>
     </div>
-
 
     <div class="modal fade login" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog login animated">
@@ -165,15 +162,18 @@ export default {
   name: 'NavigationBar',
   data() {
     return {
-      currentUser:null
+      logged: false,
+      currentUser: null
     }
   },
   mounted() {
     comp = this;
     const auth = getAuth();
     onAuthStateChanged(auth, function (user) {
+      console.log("onAuthStateChanged")
+      comp.emitter.emit('userLogged', user)
       if (user) {  //Neu dang nhap roi
-        comp.emitter.emit('userLogged', user)
+        comp.currentUser = user
         afterLogin(user);
         presence(user);
         comp.enterRoom(user)
@@ -189,7 +189,7 @@ export default {
   },
   methods: {
     enterRoom(user) {
-      dbRef = ref(database, 'chats/' + utils.getMapID(this) + "/users");
+      dbRef = ref(database, 'rooms/' + utils.getMapID(this) + "/users");
       let leave = {};
       leave[user.uid] = null;
 
@@ -211,7 +211,6 @@ export default {
     signOut() {
       const auth = getAuth();
       signOut(auth).then(() => {
-
         $('.user').addClass("d-none");
         $('#btnLogin').text("Đăng nhập");
         $('#btnLogin').addClass("rounded")
@@ -235,6 +234,7 @@ export default {
           if (dbRef)
             off(dbRef)
         }
+        this.currentUser = null;
       });
     },
     googleLogin() {
@@ -251,6 +251,7 @@ export default {
     },
     newMap() {
       this.$router.push('/map/' + utils.makeId(6))
+      this.emitter.emit('new')
     },
     exportMap() {
       this.emitter.emit('exportMap')
