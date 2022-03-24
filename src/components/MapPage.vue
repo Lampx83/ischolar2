@@ -1,6 +1,6 @@
 <template>
-  <NavigationBar/>
-  <div class="row">
+  <TheHeader/>
+  <div class="row g-0">
     <MindMap/>
     <NodeDetail/>
   </div>
@@ -9,14 +9,15 @@
 
 <script>
 import FooterFragment from './shared/TheFooter.vue'
-import NavigationBar from './shared/TheHeader.vue'
+import TheHeader from './shared/TheHeader.vue'
 import MindMap from './fragments/MindMap.vue'
 import NodeDetail from './fragments/NodeDetail.vue'
+
 export default {
   name: 'App',
   components: {
     MindMap,
-    NavigationBar,
+    TheHeader,
     FooterFragment,
     NodeDetail
   }
@@ -24,7 +25,11 @@ export default {
 </script>
 
 <style>
+
 .text-small {
   font-size: 0.9rem;
+}
+jmnode{
+  tabindex:-1
 }
 </style>

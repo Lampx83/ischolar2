@@ -25,7 +25,9 @@
       </div>
       <!-- Typing area -->
       <div class="bg-light input-group">
-        <input id="txtMessage" v-on:keyup.enter="sendMessage" type="text" autocomplete="off" placeholder="Type a message" aria-describedby="button-addon2" class="form-control rounded-0 border-0 bg-light">
+        <input @focus="editing=true"
+               @blur="editing=false"
+               id="txtMessage" v-on:keyup.enter="sendMessage" type="text" autocomplete="off" placeholder="Type a message" aria-describedby="button-addon2" class="form-control rounded-0 border-0 bg-light">
         <div class="input-group-append">
           <button id="button-addon2" class="btn btn-link" @click="sendMessage">
             <img width="30" height="30" src="../../assets/images/send-button.svg"/>
@@ -52,55 +54,69 @@ export default {
   name: "ChatBox",
   data() {
     return {
+      editing: false,
       currentUser: {},
       users: []
     }
   },
+  watch: {
+    editing() {
+      this.emitter.emit('editing', this.editing)
+    },
+  },
   mounted() {
-
     this.emitter.on('userLogged', (user) => {
       this.currentUser = user
       if (user) {  //Logged in
-        comp = this;
-        refUsers = ref(database, 'rooms/' + utils.getMapID(this) + "/users");
-        onValue(refUsers, (snapshot) => {
-          console.log("onValue")
-          const data = snapshot.val();
-          if (data) {
-            this.users = data
-            this.emitter.emit('chatUpdated', comp.users)
-            // for (var uid in data) {
-            //   let avatar = "<img src='" + data[uid].photo + "' alt='user' width='40' height='40'  class='rounded-circle'>";
-            //   if (!data[uid].photo && data[uid].name) {
-            //     avatar = "<div><div class='friend'>" + data[uid].name + "</div></div>"
-            //   }
-            //   $('#usersChat').append("<a onclick='showChat(this,\"" + uid + "\")' class=\"list-group-item list-group-item-action rounded-0 media uchat\">" + avatar + "<span class=\"media-body text-small ps-1\">" + data[uid].name + "</span></a>")
-            //   if (!data[uid].photo && data[uid].name) {
-            //     $('.friend').nameBadge();
-            //   }
-            // }
-          }
-        });
-        if(refChat==null) {
-          refChat = ref(database, 'rooms/' + utils.getMapID(this) + "/chats");
-          onChildAdded(refChat, (data) => {
-            this.showMessage(data.val());
-          });
-        }
+        this.enterRoom(utils.getMapID(this))
       } else {
-        if (refUsers) {
-          off(refUsers)
-          refUsers = null;
-        }
-        if (refChat) {
-          off(refChat)
-          refChat = null;
-        }
+        this.leaveRoom()
       }
     })
-
+    this.emitter.on('newMap', (newRoom) => {
+      this.leaveRoom()
+      this.enterRoom(newRoom)
+    })
   },
   methods: {
+    enterRoom(mapID) {
+      comp = this;
+      refUsers = ref(database, 'rooms/' + mapID + "/users");
+      onValue(refUsers, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          this.users = data
+          this.emitter.emit('chatUpdated', comp.users)
+          // for (var uid in data) {
+          //   let avatar = "<img src='" + data[uid].photo + "' alt='user' width='40' height='40'  class='rounded-circle'>";
+          //   if (!data[uid].photo && data[uid].name) {
+          //     avatar = "<div><div class='friend'>" + data[uid].name + "</div></div>"
+          //   }
+          //   $('#usersChat').append("<a onclick='showChat(this,\"" + uid + "\")' class=\"list-group-item list-group-item-action rounded-0 media uchat\">" + avatar + "<span class=\"media-body text-small ps-1\">" + data[uid].name + "</span></a>")
+          //   if (!data[uid].photo && data[uid].name) {
+          //     $('.friend').nameBadge();
+          //   }
+          // }
+        }
+      });
+      if (refChat == null) {
+        refChat = ref(database, 'rooms/' + mapID + "/chats");
+        onChildAdded(refChat, (data) => {
+          this.showMessage(data.val());
+        });
+      }
+    },
+    leaveRoom() {
+      $('#chatMessages').empty()
+      if (refUsers) {
+        off(refUsers)
+        refUsers = null;
+      }
+      if (refChat) {
+        off(refChat)
+        refChat = null;
+      }
+    },
     showMessage(data) {
       if (this.currentUser.uid === data.uid)
         $('#chatMessages').append("<div class=\"ml-auto d-flex justify-content-end\"><div class=\"chat-body\"><div class=\"bg-primary rounded-pill py-2 px-3  text-white text-small\">" + data.message + "</div><span class=\"text-muted d-flex justify-content-end chat-time\">" + utils.time_ago(data.time) + "</span></div></div>\n")

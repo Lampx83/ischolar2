@@ -1,9 +1,13 @@
 <template>
-  <div id="jsmind_container" class="col-md-9"> </div>
+  <div id="jsmind_container" class="col-md-9"></div>
 </template>
-
 <script>
+
 import "jsmind/style/jsmind.css";
+
+// global.jsMind = require("./../../jsmind/js/jsmind.js")
+// require("./../../jsmind/js/jsmind.draggable.js")
+// require("./../../jsmind/js/jsmind.screenshot.js")
 
 global.jsMind = require('jsmind');
 require('jsmind/js/jsmind.draggable');
@@ -13,9 +17,8 @@ import jsMind from "jsmind"
 import {database} from "@/firebase";
 import {ref, onValue, set} from "firebase/database";
 import $ from "jquery"
-
+import config from "@/config";
 import utils from "@/utils";
-
 
 let mindCurrentVer = "";
 
@@ -58,6 +61,8 @@ export default {
   name: "MindMap",
   data() {
     return {
+      abc: "abc",
+      firstTime: true,
       currentUser: {},
       id: this.$route.params.id,
       selectedNode: {},
@@ -77,6 +82,7 @@ export default {
     }
   },
   mounted() {
+    console.log("MindMap mounted")
     let comp = this;
     const options = {
       container: 'jsmind_container',
@@ -87,7 +93,7 @@ export default {
         enable: true, 		// whether to enable shortcut
         handles: {}, 			// Named shortcut key event processor
         mapping: { 			// shortcut key mapping
-          addchild: 45, 	// <Insert>
+          addchild: 9, 	// <Insert>
           addbrother: 13, // <Enter>
           editnode: 113, 	// <F2>
           delnode: 46, 	// <Delete>
@@ -101,15 +107,7 @@ export default {
     }
     jm = jsMind.show(options, this.mind);
     jm.add_event_listener((data) => {
-      // if (data == jsMind.event_type.show)
-      //
-      // else if (data == jsMind.event_type.resize)
-      //
-      // else if (data == jsMind.event_type.select)
-      //
-      // else
       if (data == jsMind.event_type.edit) {
-
         this.savetoCloud()
       }
     })
@@ -120,11 +118,20 @@ export default {
     } else {
       this.loadMap(utils.getMapID(this));
     }
-
     $("#UserNotes").change(function () {
       comp.selectedNode.data.usernote = $("#UserNotes").val();
       comp.savetoCloud();
     })
+    $("#ResearchTitle").change(function () {
+      comp.selectedNode.data.researchtitle = $("#ResearchTitle").val();
+      comp.savetoCloud();
+    })
+
+    this.emitter.on('changeData', (node) => {
+      this.selectedNode = node;
+      comp.savetoCloud();
+    })
+
     this.emitter.on('userLogged', (user) => {
       this.currentUser = user;
     })
@@ -132,7 +139,11 @@ export default {
       jsMind.util.file.save(jsMind.util.json.json2string(jm.get_data()), 'text/jsmind', jm.get_data().meta.name + '.json');
     })
     this.emitter.on('editing', (data) => {
-      jm.options.shortcut.enable = data
+      console.log("Editing: " + data)
+      jm.options.shortcut.enable = !data
+    })
+    this.emitter.on('genDoc', (data) => {
+      this.genDoc(data)
     })
     this.emitter.on('importMap', (data) => {
       jsMind.util.file.read(data, function (jsmind_data) {
@@ -154,9 +165,15 @@ export default {
     this.emitter.on('zoomOut', () => {
       jm.view.zoomOut()
     })
-
   },
   methods: {
+    dataChange() {
+      console.log("Changed")
+      if (this.selectedNode.data) {
+        this.selectedNode.data.usernote = $("#UserNotes").val();
+        this.savetoCloud();
+      }
+    },
     loadMap(mapID) {
       let com = this;
       let dbRef = ref(database, 'maps/' + mapID);
@@ -164,21 +181,26 @@ export default {
         const data = snapshot.val();
         this.mind = data;
         if (this.mind) {
-
           if (this.mind.meta.version !== mindCurrentVer) {
             checkNode(this.mind.data, 0)
             jm.docType = this.mind.docType;
             jm.show(this.mind);
-
           }
         } else {
-          this.mind = template_English();
+          this.mind = this.template_English();
           checkNode(this.mind.data, 0)
           jm.show(this.mind);
+        }
+        if (this.firstTime) {
+          com.emitter.emit('showNode', jm.get_node('root'))
+          com.emitter.emit('loadMapDone')
+          this.firstTime = false;
         }
 
         $("jmnode").click(function () {
           com.emitter.emit('showNode', jm.get_selected_node())
+          com.selectedNode = jm.get_selected_node()
+          jm.options.shortcut.enable = true
         })
         $("jmnode").on('keypress', function () {
           changeNodeColor(jm.get_selected_node(), true)
@@ -186,113 +208,144 @@ export default {
       });
     },
     savetoCloud(save = 1) {
-
-
       mindCurrentVer = utils.makeId(10);
       if (save === 1) {
-        var mind_data = jm.get_data();
+        console.log("savetoCloud")
+        let mind_data = jm.get_data();
         mind_data.meta.version = mindCurrentVer;
-        var dbRef = ref(database, 'maps/' + utils.getMapID(this));
+        let dbRef = ref(database, 'maps/' + utils.getMapID(this));
         set(dbRef, mind_data)
       }
-    }
-  }
-}
-
-
-function template_English() {
-  return {
-    "meta": {
-      "name": "Research",
-      "author": "Lampx",
-      "version": "3svOUT8K7Y"
     },
-    "format": "node_tree",
-    "data": {
-      "id": "root",
-      "topic": "Research name",
-      "usernote": "Research topic",
-      "isroot": true,
-      "children": [
-        {
-          "id": "keyword",
-          "topic": "Keywords",
-          "direction": "right",
+    copy_data(obj,data) {
+      obj.docType = data.docType;
+      obj.researchtitle = $("#title").val();
+      obj.teacher_name = data.teacher_name;
+      obj.authors = data.authors;
+      obj.number_of_sample = data.number_of_sample;
+      obj.language = data.language;
+    },
+    genDoc(data) {
+      jm.get_node('root').data.authors = data.authors
+      let root = jm.mind.get_node("root").data;
+      this.copy_data(root,data)
+      this.savetoCloud()
+
+      let mind_data = jm.get_data();
+      this.copy_data(mind_data.meta,data)
+      let oReq = new XMLHttpRequest();
+      oReq.open("POST", config.getBaseAPI() + "/api/v1/mapgendoc", true);
+      oReq.responseType = "blob";
+      oReq.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+      oReq.onload = function () {
+        const blob = new Blob([oReq.response]);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = root.researchtitle + ".docx";
+        link.click();
+      };
+      oReq.send(JSON.stringify(mind_data));
+
+    },
+    template_English() {
+      return {
+        "meta": {
+          "name": "Research",
+          "version": "3svOUT8K7Y",
+          "author": ""
         },
-        {
-          "id": "Problems",
-          "topic": "Problems",
-          "direction": "right",
+        "format": "node_tree",
+        "data": {
+          "id": "root",
+          "topic": this.$t("Research name"),
+          "researchtitle": "",
+          "authors": [{"name": this.$t("Author name")}],
+          "usernote": "",
+          "isroot": true,
           "children": [
             {
-              "id": "problem1",
-              "topic": "Problem 1",
+              "id": "Keywords",
+              "topic": this.$t("Keywords"),
+              "direction": "right",
             },
             {
-              "id": "problem2",
-              "topic": "Problem 2",
+              "id": "Problems",
+              "topic": this.$t("Problems"),
+              "direction": "right",
+              "children": [
+                {
+                  "id": "Problem 1",
+                  "topic": this.$t("Problem") + " 1",
+                },
+                {
+                  "id": "Problem 2",
+                  "topic": this.$t("Problem") + " 2",
+                },
+                {
+                  "id": "Problem 3",
+                  "topic": this.$t("Problem") + " 3",
+                }
+              ]
             },
             {
-              "id": "problem3",
-              "topic": "Problem 3",
+              "id": "Solutions",
+              "topic": this.$t("Solutions"),
+              "direction": "right",
+              "children": [
+                {
+                  "id": "Solution 1",
+                  "topic": this.$t("Solution") + " 1"
+
+                },
+                {
+                  "id": "Solution 2",
+                  "topic": this.$t("Solution") + " 2"
+
+                },
+                {
+                  "id": "Solution 3",
+                  "topic": this.$t("Solution") + " 3"
+                }
+              ]
+            },
+            {
+              "id": "Expected Findings",
+              "topic": this.$t("Expected Findings"),
+              "direction": "right"
+            },
+            {
+              "id": "Abstract",
+              "topic": this.$t("Abstract"),
+              "direction": "left"
+            },
+            {
+              "id": "Introduction",
+              "topic": this.$t("Introduction"),
+              "direction": "left"
+            },
+            {
+              "id": "Literature",
+              "topic": this.$t("Literature"),
+              "direction": "left"
+            },
+            {
+              "id": "Methodology",
+              "topic": this.$t("Methodology"),
+              "direction": "left"
+            },
+            {
+              "id": "Results and Discussion",
+              "topic": this.$t("Results and Discussion"),
+              "direction": "left"
+            },
+            {
+              "id": "Conclusion",
+              "topic": this.$t("Conclusion"),
+              "direction": "left"
             }
           ]
-        },
-        {
-          "id": "method",
-          "topic": "Solutions",
-          "direction": "right",
-          "children": [
-            {
-              "id": "method1",
-              "topic": "Solution 1"
-            },
-            {
-              "id": "method2",
-              "topic": "Solution 2"
-            },
-            {
-              "id": "method3",
-              "topic": "Solution 3"
-            }
-          ]
-        },
-        {
-          "id": "Findings",
-          "topic": "Findings",
-          "direction": "right"
-        },
-        {
-          "id": "Abstract",
-          "topic": "Abstract",
-          "direction": "left"
-        },
-        {
-          "id": "Introduction",
-          "topic": "Introduction",
-          "direction": "left"
-        },
-        {
-          "id": "Literature",
-          "topic": "Literature",
-          "direction": "left"
-        },
-        {
-          "id": "Methodology",
-          "topic": "Methodology",
-          "direction": "left"
-        },
-        {
-          "id": "Results and Discussion",
-          "topic": "Results and Discussion",
-          "direction": "left"
-        },
-        {
-          "id": "Conclusion",
-          "topic": "Conclusion",
-          "direction": "left"
         }
-      ]
+      }
     }
   }
 }
@@ -439,7 +492,7 @@ function template_English() {
 <style scoped>
 
 #jsmind_container {
-  min-height: 75vh;
+  min-height: 93vh;
 }
 
 </style>

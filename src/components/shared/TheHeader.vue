@@ -1,6 +1,6 @@
 <template>
   <nav class="navbar navbar-expand-sm navbar-dark bg-dark" id="header">
-    <a class="navbar-brand" href="#">
+    <a class="navbar-brand" :href="'/#/map/' + this.$route.params.id + '?lang='+this.$route.query.lang">
       <img src="../../assets/images/graduation.svg" width="30" height="30" class="mr-2"/>iScholar
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
@@ -11,47 +11,48 @@
       <ul class="navbar-nav">
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown1" role="button"
-             data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">File</a>
+             data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ $t("File") }}</a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
-            <a class="dropdown-item" id="dropdown-item-new" @click="newMap">New</a>
+            <a class="dropdown-item" id="dropdown-item-new" @click="newMap">{{ $t("New") }}</a>
             <input id="file_input" style="display: none" type="file" @change="open_file"/>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" @click="exportMap">Export</a>
-            <a class="dropdown-item" @click="importMap">Import</a>
-            <a class="dropdown-item" @click="screenshotMap">Screenshot</a>
+            <a class="dropdown-item" @click="exportMap">{{ $t("Export") }}</a>
+            <a class="dropdown-item" @click="importMap">{{ $t("Import") }}</a>
+            <a class="dropdown-item" @click="screenshotMap">{{ $t("Screenshot") }}</a>
           </div>
         </li>
 
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button"
              data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            View
+            {{ $t("View") }}
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
-            <a class="dropdown-item" @click="zoomIn">Zoom in</a>
-            <a class="dropdown-item" @click="zoomOut">Zoom out </a>
+            <a class="dropdown-item" @click="zoomIn">{{ $t("Zoom in") }}</a>
+            <a class="dropdown-item" @click="zoomOut">{{ $t("Zoom out") }}</a>
           </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown4" role="button"
              data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Publish
+            {{ $t("Journal") }}
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
-            <router-link class="dropdown-item" to="/publish">Scopus</router-link>
+            <router-link class="dropdown-item" :to="'/publish/'+ this.$route.params.id + '?lang='+this.$route.query.lang">Scopus</router-link>
             <!--                    <a class="dropdown-item" href="?c=v">Local Journals</a>-->
             <!--                    <a class="dropdown-item" href="?c=c">Top Conferences</a>-->
           </div>
         </li>
       </ul>
       <ul class="navbar-nav ms-auto navbar-right">
+        <LocaleSwitcher class="me-3"></LocaleSwitcher>
         <button v-if="currentUser" id="btnRoom" @click="showChat" type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapse-online">
           <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-people-fill me-1" viewBox="0 0 16 16">
             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
             <path d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
             <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
           </svg>
-          <span class="hideSmall">Chat room</span> <span class="badge badge-secondary bg-secondary" id="numOnline">0</span>
+          <span class="hideSmall">{{ $t("Chat room") }}</span> <span class="badge badge-secondary bg-secondary" id="numOnline">0</span>
         </button>
 
         <button id="btnLogin" type="button" class="btn btn-primary me-auto" data-bs-toggle="modal" data-bs-target="#loginModal">Đăng nhập</button>
@@ -67,7 +68,7 @@
               <div id="profileEmail"></div>
             </div>
             <div class="list-group list-group-flush">
-              <a href="/mylabs" class="list-group-item list-group-item-action">Lab của tôi</a>
+              <a class="list-group-item list-group-item-action">Nghiên cứu của tôi</a>
               <a class="list-group-item list-group-item-action text-danger" id="signout" @click="signOut">Đăng xuất</a>
             </div>
           </div>
@@ -154,6 +155,7 @@ import $ from "jquery"
 import {getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut} from "firebase/auth";
 import utils from "@/utils";
 import ChatBox from "@/components/fragments/ChatBox";
+import LocaleSwitcher from "@/components/shared/LocaleSwitcher";
 
 
 let comp = null;
@@ -250,8 +252,10 @@ export default {
       });
     },
     newMap() {
-      this.$router.push('/map/' + utils.makeId(6))
-      this.emitter.emit('new')
+      console.log("New Map")
+      let newRoom = utils.makeId(6);
+      this.$router.push({path:'/map/' +newRoom, query: {lang: this.$route.query.lang}})
+      this.emitter.emit('newMap', newRoom)
     },
     exportMap() {
       this.emitter.emit('exportMap')
@@ -284,7 +288,8 @@ export default {
     }
   },
   components: {
-    ChatBox
+    ChatBox,
+    LocaleSwitcher
   }
 }
 

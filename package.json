@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "npx patch-package",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
@@ -18,8 +19,11 @@
     "jsmind": "^0.4.6",
     "jsmind.draggable": "^1.0.0",
     "mitt": "^3.0.0",
-    "vue": "^3.2.13",
-    "vue-router": "^4.0.12"
+    "vue": "^3.2.31",
+    "vue-i18n": "^9.1.9",
+    "vue-i18n-lite": "^1.0.2",
+    "vue-router": "^4.0.12",
+    "vuex": "^4.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

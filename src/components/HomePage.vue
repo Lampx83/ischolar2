@@ -1,50 +1,41 @@
 <template>
-  <div>
-    <header className="masthead d-flex bg-dark">
-      <div className="container text-center my-auto">
-        <img src="../assets/images/graduation.svg" width="120" height="120"/>
-        <h1 className="ml-3 d-inline font-weight-bold"><strong>iScholar</strong></h1>
-        <h4 className="mb-5" id="quote">
-          <span v-html="msg"></span>
-        </h4>
-        <button className="btn btn-primary btn-lg js-scroll-trigger" @click="newMap">START</button>
-      </div>
-      <div className="overlay"></div>
-    </header>
 
+  <div class="masthead d-flex bg-dark" style="position: absolute">
+    <div class="container text-center my-auto">
+      <img src="../assets/images/graduation.svg" width="120" height="120"/>
+      <h1 class="ml-3 d-inline font-weight-bold"><strong>iScholar</strong></h1>
+      <h4 class="mb-5" id="quote">
+        <span v-html='$t("Quotes[" + Math.floor(Math.random() * 10) + "]")'></span>
+      </h4>
+      <button class="btn btn-primary btn-lg js-scroll-trigger" @click="newMap" style="text-transform: uppercase;">{{ $t("Start") }}</button>
+    </div>
+    <div class="overlay"></div>
+  </div>
+  <div class="d-flex bg-dark justify-content-end w-100" style="position: absolute">
+    <LocaleSwitcher class="m-4"/>
   </div>
 </template>
 
 <script>
 import utils from "@/utils";
+import LocaleSwitcher from "@/components/shared/LocaleSwitcher";
 
 export default {
   name: 'HelloWorld',
   data() {
-    return {
-      msg: "Quotes"
-    }
-  },
-  mounted() {
-    var quotes = [
-      '"<em>All I\'m armed with is research.</em>" - <small>Mike Wallace</small>',
-      '"<em>Measuring engagement and engaging consumers are two sides of the same coin.</em>" - <small>David Penn</small>',
-      '"<em>Bad news sells papers. It also sells market research.</em>" - <small>Ben Bernanke</small>',
-      '"<em>Research is what I\'m doing when I don\'t know what I\'m doing.</em>" - <small>Wernher von Braun</small>',
-      '"<em>Research is formalized curiosity. It is poking and prying with a purpose.</em>" - <small>Zora Neale Hurston</small>',
-      '"<em>In much of society, research means to investigate something you do not know or understand.</em>" - <small>Neil Armstrong</small>',
-      '"<em>I believe in innovation and that the way you get innovation is you fund research and you learn the basic facts.</em>" - <small>Bill Gates</small>',
-      '"<em>To understand how consumers really think and feel, it is vital to go beyond words.</em>" - <small>Katja Bressette</small>',
-      '"<em>Research is creating new knowledge.</em>" - <small>Neil Armstrong</small>',
-      '"<em>Research is about engaging in a conversation with a brand.</em>" - <small>Matthew Rhodes</small>',
-    ]
-    var randNumber = Math.floor(Math.random() * quotes.length);
-    this.msg = quotes[randNumber]
+    return {}
   },
   methods: {
     newMap() {
-      this.$router.push('/map/'+utils.makeId(6))
+      this.$router.push({path: '/map/' + utils.makeId(6), query: {lang: this.$route.query.lang}})
+    },
+    callSetLangActions(event) {
+      this.$i18n.locale = event.target.value
+      // this.$router.push({params: {lang: event.target.value}})
     }
+  },
+  components: {
+    LocaleSwitcher
   }
 }
 </script>
