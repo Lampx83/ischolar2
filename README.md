@@ -1,5 +1,4 @@
-# untitled14
-
+# iScholar
 ## Project setup
 ```
 npm install

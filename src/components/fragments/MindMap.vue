@@ -1,14 +1,12 @@
 <template>
   <div id="jsmind_container" class="col-md-9"></div>
+  <teleport to="body">
+    <ChooseMapModal/>
+  </teleport>
 </template>
 <script>
 
 import "jsmind/style/jsmind.css";
-
-// global.jsMind = require("./../../jsmind/js/jsmind.js")
-// require("./../../jsmind/js/jsmind.draggable.js")
-// require("./../../jsmind/js/jsmind.screenshot.js")
-
 global.jsMind = require('jsmind');
 require('jsmind/js/jsmind.draggable');
 require('jsmind/js/jsmind.screenshot');
@@ -19,6 +17,9 @@ import {ref, onValue, set} from "firebase/database";
 import $ from "jquery"
 import config from "@/config";
 import utils from "@/utils";
+import {Modal} from 'bootstrap';
+
+import ChooseMapModal from "@/components/fragments/ChooseMapModal";
 
 let mindCurrentVer = "";
 
@@ -59,9 +60,11 @@ function changeNodeColor(node, justAdded) {
 
 export default {
   name: "MindMap",
+  components: {
+    ChooseMapModal
+  },
   data() {
     return {
-      abc: "abc",
       firstTime: true,
       currentUser: {},
       id: this.$route.params.id,
@@ -83,6 +86,7 @@ export default {
   },
   mounted() {
     console.log("MindMap mounted")
+
     let comp = this;
     const options = {
       container: 'jsmind_container',
@@ -105,19 +109,22 @@ export default {
         }
       },
     }
-    jm = jsMind.show(options, this.mind);
-    jm.add_event_listener((data) => {
-      if (data == jsMind.event_type.edit) {
-        this.savetoCloud()
-      }
-    })
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const params = Object.fromEntries(urlSearchParams.entries());
-    if (params['action'] === "new") {
-      //$('#addMapModal').modal('show')
-    } else {
+
+
+
+    if (this.$route.query.action === "new") { //Nếu chưa tạo map bao giờ thì hiện modal chọn kèm theo hướng dẫn
+      let modal = new Modal(document.getElementById('chooseMapModal'))
+      modal.show()
+    } else {  //Nếu map này đã có rồi thì tiến hành tải map từ cloud
+      jm = jsMind.show(options, this.mind);
+      jm.add_event_listener((data) => {
+        if (data == jsMind.event_type.edit) {
+          this.savetoCloud()
+        }
+      })
       this.loadMap(utils.getMapID(this));
     }
+
     $("#UserNotes").change(function () {
       comp.selectedNode.data.usernote = $("#UserNotes").val();
       comp.savetoCloud();
@@ -126,7 +133,6 @@ export default {
       comp.selectedNode.data.researchtitle = $("#ResearchTitle").val();
       comp.savetoCloud();
     })
-
     this.emitter.on('changeData', (node) => {
       this.selectedNode = node;
       comp.savetoCloud();
@@ -230,9 +236,9 @@ export default {
       let root = jm.mind.get_node("root").data;
       this.copy_data(root,data)
       this.savetoCloud()
-
       let mind_data = jm.get_data();
       this.copy_data(mind_data.meta,data)
+
       let oReq = new XMLHttpRequest();
       oReq.open("POST", config.getBaseAPI() + "/api/v1/mapgendoc", true);
       oReq.responseType = "blob";

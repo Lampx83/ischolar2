@@ -27,7 +27,7 @@ export default {
   },
   methods: {
     newMap() {
-      this.$router.push({path: '/map/' + utils.makeId(6), query: {lang: this.$route.query.lang}})
+      this.$router.push({path: '/map/' + utils.makeId(6), query: {lang: this.$route.query.lang,action:"new"}}) //Chuyển đến trang
     },
     callSetLangActions(event) {
       this.$i18n.locale = event.target.value
