@@ -12,6 +12,7 @@
   "Login": "Đăng nhập",
   "Research title": "Tiêu đề nghiên cứu",
   "Authors": "Tác giả",
+  "Close": "Đóng",
   "Note": "Ghi chú",
   "Generate Document": "Tạo tài liệu",
   "Author name": "Tên tác giả",
@@ -42,7 +43,7 @@
   "Teacher Name": "Giáo viên hướng dẫn",
   "Number of sample sentences": "Số lượng câu mẫu",
   "Quotes": [
-    "\"<em>Logic sẽ đưa anh từ điểm A tới điểm B. Trí tưởng tượng sẽ đưa anh tới mọi nơi.</em>\" - <small>Albert Einstein</small>",
+    "\"<em>Logic sẽ đưa bạn từ điểm A tới điểm B. Trí tưởng tượng sẽ đưa bạn tới mọi nơi.</em>\" - <small>Albert Einstein</small>",
     "\"<em>Xã hội tồn tại nhờ niềm tin, và phát triển nhờ khoa học.</em>\" - <small>Henri Frederic Amiel</small>",
     "\"<em>Nghiên cứu là những gì tôi đang làm khi tôi không biết mình đang làm gì.</em>\" - <small>Wernher von Braun</small>",
     "\"<em>Tất cả những hiểu biết vĩ đại của thế giới này đều từng bị hắt hủi.</em>\" - <small>Henry David Thoreau</small>",

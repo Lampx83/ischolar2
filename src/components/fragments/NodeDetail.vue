@@ -171,7 +171,7 @@ export default {
       }
     },
     showGenDocModal() {
-      if (this.node.data.researchtitle.trim() === "") {
+      if (this.node.data.researchtitle && this.node.data.researchtitle.trim() === "") {
         $("#ResearchTitle").addClass("is-invalid")
       } else {
         $("#ResearchTitle").removeClass("is-invalid")

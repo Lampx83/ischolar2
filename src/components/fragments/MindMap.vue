@@ -7,6 +7,7 @@
 <script>
 
 import "jsmind/style/jsmind.css";
+
 global.jsMind = require('jsmind');
 require('jsmind/js/jsmind.draggable');
 require('jsmind/js/jsmind.screenshot');
@@ -70,23 +71,31 @@ export default {
       id: this.$route.params.id,
       selectedNode: {},
       mind: {
-        "meta": {},
+        "meta": {
+          "name": "Mind map",
+          "version": "3svOUT8K7Y",
+          "author": ""
+        },
+        "format": "node_tree",
         "data": {
           "id": "root",
-          "topic": "...",
+          "topic": "Mind map",
+          "researchtitle": "",
+          "authors": [{"name": this.$t("Author name")}],
+          "usernote": "",
+          "isroot": true,
         }
       }
     }
   },
   watch: {
-    '$route'(to) {
-      this.id = to.params.id
-      this.loadMap(utils.getMapID(this));
-    }
+    // '$route'(to) {
+    //   this.id = to.params.id
+    //   this.loadMap(utils.getMapID(this));
+    // }
   },
   mounted() {
     console.log("MindMap mounted")
-
     let comp = this;
     const options = {
       container: 'jsmind_container',
@@ -110,19 +119,19 @@ export default {
       },
     }
 
+    jm = jsMind.show(options, this.mind);
 
+
+    jm.add_event_listener((data) => {
+      if (data == jsMind.event_type.edit) {
+        this.savetoCloud()
+      }
+    })
 
     if (this.$route.query.action === "new") { //Nếu chưa tạo map bao giờ thì hiện modal chọn kèm theo hướng dẫn
-      let modal = new Modal(document.getElementById('chooseMapModal'))
-      modal.show()
+      this.showChooseMap();
     } else {  //Nếu map này đã có rồi thì tiến hành tải map từ cloud
-      jm = jsMind.show(options, this.mind);
-      jm.add_event_listener((data) => {
-        if (data == jsMind.event_type.edit) {
-          this.savetoCloud()
-        }
-      })
-      this.loadMap(utils.getMapID(this));
+      this.loadMap();
     }
 
     $("#UserNotes").change(function () {
@@ -133,9 +142,18 @@ export default {
       comp.selectedNode.data.researchtitle = $("#ResearchTitle").val();
       comp.savetoCloud();
     })
+
+    this.emitter.on('newMap', () => {
+      this.showChooseMap();
+    })
     this.emitter.on('changeData', (node) => {
       this.selectedNode = node;
       comp.savetoCloud();
+    })
+
+    this.emitter.on('loadMap', (mapType) => {
+      console.log("loadMap: " + mapType)
+      this.loadMap(mapType)
     })
 
     this.emitter.on('userLogged', (user) => {
@@ -151,6 +169,8 @@ export default {
     this.emitter.on('genDoc', (data) => {
       this.genDoc(data)
     })
+
+
     this.emitter.on('importMap', (data) => {
       jsMind.util.file.read(data, function (jsmind_data) {
         let mind = jsMind.util.json.string2json(jsmind_data);
@@ -171,7 +191,8 @@ export default {
     this.emitter.on('zoomOut', () => {
       jm.view.zoomOut()
     })
-  },
+  }
+  ,
   methods: {
     dataChange() {
       console.log("Changed")
@@ -180,37 +201,63 @@ export default {
         this.savetoCloud();
       }
     },
-    loadMap(mapID) {
+    showChooseMap() {
+      this.loadMap(0)
+      let modal = new Modal(document.getElementById('chooseMapModal'))
+      modal.show({backdrop: 'static', keyboard: false})
+    },
+    loadMap(newmapType) {
+      let mapID = utils.getMapID(this)
       let com = this;
-      let dbRef = ref(database, 'maps/' + mapID);
-      onValue(dbRef, (snapshot) => {
-        const data = snapshot.val();
-        this.mind = data;
-        if (this.mind) {
-          if (this.mind.meta.version !== mindCurrentVer) {
-            checkNode(this.mind.data, 0)
-            jm.docType = this.mind.docType;
-            jm.show(this.mind);
+      com.emitter.emit('showNode', jm.get_node('root'))
+      com.emitter.emit('loadMapDone')
+      if (newmapType != null) { //Create new Map
+        if (newmapType == 0) {
+          this.mind = this.template_Empty();
+        } else if (newmapType == 1) {
+          this.$i18n.locale = "vn"
+          this.$router.push({query: {lang: this.$i18n.locale}})
+          this.mind = this.template_Research();
+          this.emitter.emit('changeLang', this.$i18n.locale)
+        } else if (newmapType == 2) {
+          this.$i18n.locale = "en"
+          this.$router.push({query: {lang: this.$i18n.locale}})
+          this.mind = this.template_Research();
+          this.emitter.emit('changeLang', this.$i18n.locale)
+        }
+        checkNode(this.mind.data, 0)
+        jm.show(this.mind);
+      } else {
+        let dbRef = ref(database, 'maps/' + mapID);
+        onValue(dbRef, (snapshot) => {
+          const data = snapshot.val();
+          this.mind = data;
+          if (this.mind) {
+            if (this.mind.meta.version !== mindCurrentVer) {
+              checkNode(this.mind.data, 0)
+              jm.docType = this.mind.docType;
+              jm.show(this.mind);
+            }
+          } else {  //Nếu chưa có
+            this.showChooseMap();
           }
-        } else {
-          this.mind = this.template_English();
-          checkNode(this.mind.data, 0)
-          jm.show(this.mind);
-        }
-        if (this.firstTime) {
-          com.emitter.emit('showNode', jm.get_node('root'))
-          com.emitter.emit('loadMapDone')
-          this.firstTime = false;
-        }
-
-        $("jmnode").click(function () {
-          com.emitter.emit('showNode', jm.get_selected_node())
-          com.selectedNode = jm.get_selected_node()
-          jm.options.shortcut.enable = true
-        })
-        $("jmnode").on('keypress', function () {
-          changeNodeColor(jm.get_selected_node(), true)
+          if (this.firstTime) {
+            this.firstTime = false;
+          }
+          this.addEventNode()
         });
+      }
+      this.addEventNode()
+    },
+    addEventNode() {
+      let com = this;
+      $("jmnode").click(function () {
+        com.emitter.emit('showNode', jm.get_selected_node())
+        com.selectedNode = jm.get_selected_node()
+        jm.options.shortcut.enable = true
+      })
+      $("jmnode").on('keypress', function () {
+        changeNodeColor(jm.get_selected_node(), true)
       });
     },
     savetoCloud(save = 1) {
@@ -223,7 +270,7 @@ export default {
         set(dbRef, mind_data)
       }
     },
-    copy_data(obj,data) {
+    copy_data(obj, data) {
       obj.docType = data.docType;
       obj.researchtitle = $("#title").val();
       obj.teacher_name = data.teacher_name;
@@ -234,10 +281,10 @@ export default {
     genDoc(data) {
       jm.get_node('root').data.authors = data.authors
       let root = jm.mind.get_node("root").data;
-      this.copy_data(root,data)
+      this.copy_data(root, data)
       this.savetoCloud()
       let mind_data = jm.get_data();
-      this.copy_data(mind_data.meta,data)
+      this.copy_data(mind_data.meta, data)
 
       let oReq = new XMLHttpRequest();
       oReq.open("POST", config.getBaseAPI() + "/api/v1/mapgendoc", true);
@@ -253,7 +300,25 @@ export default {
       oReq.send(JSON.stringify(mind_data));
 
     },
-    template_English() {
+    template_Empty() {
+      return {
+        "meta": {
+          "name": "Mind map",
+          "version": "3svOUT8K7Y",
+          "author": ""
+        },
+        "format": "node_tree",
+        "data": {
+          "id": "root",
+          "topic": "Mind map",
+          "researchtitle": "",
+          "authors": [{"name": this.$t("Author name")}],
+          "usernote": "",
+          "isroot": true,
+        }
+      }
+    },
+    template_Research() {
       return {
         "meta": {
           "name": "Research",

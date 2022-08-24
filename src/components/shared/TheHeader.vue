@@ -254,7 +254,7 @@ export default {
     newMap() {
       console.log("New Map")
       let newRoom = utils.makeId(6);
-      this.$router.push({path:'/map/' +newRoom, query: {lang: this.$route.query.lang}})
+      this.$router.push({path: '/map/' + newRoom, query: {lang: this.$route.query.lang, action: "new"}})
       this.emitter.emit('newMap', newRoom)
     },
     exportMap() {

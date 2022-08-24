@@ -22,11 +22,18 @@ export default {
     }
   },
   mounted() {
-    console.log("mounted")
     if (this.$route.query.lang === "en")
       this.callSetLangActions(languages[0])
     else
       this.callSetLangActions(languages[1])
+
+    this.emitter.on('changeLang', (language) => {
+      if (language === "en")
+        this.callSetLangActions(languages[0])
+      else
+        this.callSetLangActions(languages[1])
+    })
+
   },
   methods: {
     callSetLangActions(lang) {

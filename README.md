@@ -25,7 +25,7 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 
 ```bash
-firebase emulators:start
+firebase emulators:start  
 npm run build 
 firebase deploy
 ```
